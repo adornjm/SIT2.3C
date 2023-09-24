@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Delivery</title>
+    <style>
+        /* Add your CSS styles here */
+        /* You can use CSS frameworks like Bootstrap for styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .restaurant-item {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 10px;
+            display: inline-block;
+            width: calc(33.33% - 20px);
+            vertical-align: top;
+            box-sizing: border-box;
+            text-align: center;
+            background-color: #fff;
+            transition: transform 0.2s ease-in-out;
+        }
+        .restaurant-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+        }
+        .restaurant-item img {
+            max-width: 100%;
+            height: auto;
+        }
+        .rating {
+            margin-top: 10px;
+            color: #ffac00;
+            font-size: 1.2rem;
+        }
+        .sort-button {
+            background-color: #ffac00;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+            margin-bottom: 10px;
+        }
+        .sort-button:hover {
+            background-color: #ff9500;
+        }
+        .filter-rating form {
+            background-color: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        .filter-rating label {
+            font-weight: bold;
+        }
+        .filter-rating input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            transition: border-color 0.2s ease-in-out;
+        }
+        .filter-rating input[type="number"]:focus {
+            border-color: #ffac00;
+        }
+        .reset-button {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+            margin-top: 10px;
+        }
+        .reset-button:hover {
+            background-color: #0056b3;
+        }
+        .search-form {
+            background-color: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+        .search-form label {
+            font-weight: bold;
+        }
+        .search-form input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            transition: border-color 0.2s ease-in-out;
+        }
+        .search-form input[type="text"]:focus {
+            border-color: #ffac00;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div class="container">
+            <div class="header">
+                <h1>Welcome to Food Delivery</h1>
+            </div>
+            <div class="filter-rating">
+                <form @submit.prevent="filterByRating">
+                    <label for="minRating">Filter by Minimum Rating:</label>
+                    <input type="number" id="minRating" v-model="minRating" min="0" max="5" step="0.1" required>
+                    <button type="submit">Apply Filter</button>
+                    <button @click="resetFilter" class="reset-button">Reset Filter</button>
+                </form>
+            </div>
+            <div class="search-form">
+                <form @submit.prevent="searchByName">
+                    <label for="restaurantName">Search by Restaurant Name:</label>
+                    <input type="text" id="restaurantName" v-model="searchTerm" required>
+                    <button type="submit">Search</button>
+                    <button @click="resetSearch" class="reset-button">Reset Search</button>
+                </form>
+            </div>
+            <div class="restaurant-list">
+                <button @click="sortByRating" class="sort-button">Sort by Rating</button>
+                <div v-for="restaurant in filteredRestaurants" :key="restaurant.id" class="restaurant-item">
+                    <img :src="restaurant.image" alt="Restaurant Image">
+                    <h2>{{ restaurant.name }}</h2>
+                    <div class="rating">
+                        <span v-for="star in calculateAverageRating(restaurant.rating)" class="star">&#9733;</span>
+                        ({{ calculateAverageRating(restaurant.rating) }})
+                    </div>
+                    <p>{{ restaurant.description }}</p>
+                </div>
+            </div>
+            <div class="add-restaurant">
+                <h2>Add a New Restaurant</h2>
+                <form @submit.prevent="addRestaurant">
+                    <label for="restaurantName">Restaurant Name:</label>
+                    <input type="text" id="restaurantName" v-model="newRestaurant.name" required>
+                    <label for="restaurantDescription">Restaurant Description:</label>
+                    <textarea id="restaurantDescription" v-model="newRestaurant.description" required></textarea>
+                    <label for="restaurantImage">Restaurant Image URL:</label>
+                    <input type="url" id="restaurantImage" v-model="newRestaurant.image" required>
+                    <label for="restaurantRating">Restaurant Rating:</label>
+                    <input type="number" id="restaurantRating" v-model="newRestaurant.rating" min="0" max="5" step="0.1" required>
+                    <button type="submit">Add Restaurant</button>
+                </form>
+            </div>
+            <div class="total-restaurants">
+                <p>Total Restaurants: {{ restaurants.length }}</p>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/vue@3.0.11/dist/vue.global.min.js"></script>
+    <script>
+        const app = Vue.createApp({
+            data() {
+                return {
+                    restaurants: [
+                        { id: 1, name: "Restaurant 1", description: "Description 1", image: "restaurant1.jpg", rating: [4, 5, 3] },
+                        { id: 2, name: "Restaurant 2", description: "Description 2", image: "restaurant2.jpg", rating: [3, 2, 4] },
+                        // Add more restaurants here
+                    ],
+                    newRestaurant: {
+                        name: "",
+                        description: "",
+                        image: "",
+                        rating: 0,
+                    },
+                    minRating: 0,
+                    searchTerm: "",
+                };
+            },
+            computed: {
+                filteredRestaurants() {
+                    return this.restaurants.filter(restaurant => {
+                        return restaurant.name.toLowerCase().includes(this.searchTerm.toLowerCase());
+                    });
+                },
+            },
+            methods: {
+                calculateAverageRating(ratingArray) {
+                    if (ratingArray.length === 0) return 0;
+                    const sum = ratingArray.reduce((total, rating) => total + rating, 0);
+                    return (sum / ratingArray.length).toFixed(2);
+                },
+                addRestaurant() {
+                    this.restaurants.push({
+                        id: this.restaurants.length + 1,
+                        name: this.newRestaurant.name,
+                        description: this.newRestaurant.description,
+                        image: this.newRestaurant.image,
+                        rating: [parseFloat(this.newRestaurant.rating)],
+                    });
+
+                    this.newRestaurant.name = "";
+                    this.newRestaurant.description = "";
+                    this.newRestaurant.image = "";
+                    this.newRestaurant.rating = 0;
+                },
+                sortByRating() {
+                    this.restaurants.sort((a, b) => {
+                        const avgRatingA = parseFloat(this.calculateAverageRating(a.rating));
+                        const avgRatingB = parseFloat(this.calculateAverageRating(b.rating));
+                        return avgRatingB - avgRatingA;
+                    });
+                },
+                filterByRating() {
+                    this.restaurants = this.restaurants.filter(restaurant => {
+                        const avgRating = parseFloat(this.calculateAverageRating(restaurant.rating));
+                        return avgRating >= this.minRating;
+                    });
+                },
+                resetFilter() {
+                    this.minRating = 0;
+                    this.restaurants = [
+                        { id: 1, name: "Restaurant 1", description: "Description 1", image: "restaurant1.jpg", rating: [4, 5, 3] },
+                        { id: 2, name: "Restaurant 2", description: "Description 2", image: "restaurant2.jpg", rating: [3, 2, 4] },
+                        // Add more restaurants here
+                    ];
+                },
+                searchByName() {
+                    // This function is handled by the computed property.
+                },
+                resetSearch() {
+                    this.searchTerm = "";
+                },
+            },
+        });
+
+        app.mount('#app');
+    </script>
+</body>
+</html>
